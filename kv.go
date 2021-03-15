@@ -1,5 +1,9 @@
 package kv
 
+import (
+	"fmt"
+)
+
 // Underlying implementation of the key/value store.
 //
 // `data` is our backing key/value map. `updates` is a singular update queue,
@@ -17,12 +21,18 @@ const (
 	set updateType = 0
 )
 
-// Message to update the state of the store.
+// Request to update the state of the store.
 type update struct {
 	updateType updateType
 	key        interface{}
 	value      interface{}
-	ok         chan (bool)
+	result     chan (updateResult)
+}
+
+// The result of an update operation.
+type updateResult struct {
+	ok  bool
+	err error
 }
 
 // Instantiates an empty store and starts a goroutine to read
@@ -45,13 +55,17 @@ func (s *kvStore) Get(key interface{}) (value interface{}, found bool) {
 	return value, found
 }
 
-// Sets a key/value pair in the store. Returns true if the update succeeded,
-// false otherwise.
-func (s *kvStore) Set(key interface{}, value interface{}) (ok bool) {
-	update := update{0, key, value, make(chan (bool))}
+// Sets a key/value pair in the store. Returns an error if it failed.
+func (s *kvStore) Set(key interface{}, value interface{}) (err error) {
+	update := update{0, key, value, make(chan (updateResult))}
 	s.updates <- update
-	ok = <-update.ok
-	return ok
+	result := <-update.result
+
+	if !result.ok && result.err != nil {
+		return result.err
+	}
+
+	return nil
 }
 
 // Reads updates from the store's singular update queue. This ensures that only
@@ -61,9 +75,10 @@ func (s *kvStore) readUpdates() {
 		switch update.updateType {
 		case set:
 			s.data[update.key] = update.value
-			update.ok <- true
+			update.result <- updateResult{true, nil}
 		default:
-			update.ok <- false
+			err := fmt.Errorf("Unknown update type %d", update.updateType)
+			update.result <- updateResult{false, err}
 		}
 	}
 }

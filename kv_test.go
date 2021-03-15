@@ -22,9 +22,9 @@ func TestGet(t *testing.T) {
 	}
 }
 
-// Test that ensures that concurrent sets are handled one-by-one, without using
+// Test that ensures that concurrent updates are handled one-by-one, without using
 // a mutex lock, thanks to the singular update queue.
-func TestConcurrentSets(t *testing.T) {
+func TestConcurrentUpdates(t *testing.T) {
 	store := NewStore()
 	testData := ranger.Int(1, 1000)
 
@@ -32,8 +32,8 @@ func TestConcurrentSets(t *testing.T) {
 	for _, val := range testData {
 		wg.Add(1)
 		go func(v int, wg *sync.WaitGroup) {
-			ok := store.Set("value", v)
-			assert.True(t, ok)
+			err := store.Set("value", v)
+			assert.NoError(t, err)
 			wg.Done()
 		}(val, &wg)
 	}
