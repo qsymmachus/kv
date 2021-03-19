@@ -57,22 +57,19 @@ func (s *kvStore) Get(key interface{}) (value interface{}, found bool) {
 }
 
 // Sets a key/value pair in the store. Returns an error if it failed.
-func (s *kvStore) Set(key interface{}, value interface{}) (err error) {
-	update := update{0, key, value, make(chan (updateResult))}
-	s.updates <- update
-	result := <-update.result
-
-	if !result.ok && result.err != nil {
-		return result.err
-	}
-
-	return nil
+func (s *kvStore) Set(key interface{}, value interface{}) error {
+	return s.queueUpdate(update{0, key, value, make(chan (updateResult))})
 }
 
-func (s *kvStore) Unset(key interface{}) (err error) {
-	update := update{1, key, nil, make(chan (updateResult))}
-	s.updates <- update
-	result := <-update.result
+// Unsets a key/value pair in the store. REturns an error if it failed.
+func (s *kvStore) Unset(key interface{}) error {
+	return s.queueUpdate(update{1, key, nil, make(chan (updateResult))})
+}
+
+// Sends an update to the `updates` channel and waits for the result.
+func (s *kvStore) queueUpdate(u update) error {
+	s.updates <- u
+	result := <-u.result
 
 	if !result.ok && result.err != nil {
 		return result.err

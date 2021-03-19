@@ -22,7 +22,7 @@ func TestSetAndGet(t *testing.T) {
 	}
 }
 
-func TestUSet(t *testing.T) {
+func TestUnset(t *testing.T) {
 	store := NewStore()
 	store.Set("name", "Toby")
 	store.Unset("name")
