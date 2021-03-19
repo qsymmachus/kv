@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const logPath = "./test.log"
+
 func TestSetAndGet(t *testing.T) {
 	store, _ := NewStore()
 	testData := ranger.Int(1, 100)
@@ -54,7 +56,6 @@ func TestConcurrentUpdates(t *testing.T) {
 }
 
 func TestWriteAheadLog(t *testing.T) {
-	logPath := "./test.log"
 	defer os.Remove(logPath)
 
 	first, err := NewStore(LogPath(logPath))
@@ -74,4 +75,28 @@ func TestWriteAheadLog(t *testing.T) {
 	assert.Equal(t, "c", v)
 	_, ok = second.Get("b")
 	assert.False(t, ok)
+}
+
+func BenchmarkWithoutLog(b *testing.B) {
+	store, _ := NewStore()
+
+	for i := 0; i < b.N; i++ {
+		testData := ranger.Int(1, 10000)
+		for _, n := range testData {
+			store.Set(n, n)
+			store.Get(n)
+		}
+	}
+}
+
+func BenchmarkWithLog(b *testing.B) {
+	store, _ := NewStore(LogPath(logPath))
+
+	for i := 0; i < b.N; i++ {
+		testData := ranger.Int(1, 10000)
+		for _, n := range testData {
+			store.Set(n, n)
+			store.Get(n)
+		}
+	}
 }
