@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"os"
 	"sync"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func TestSetAndGet(t *testing.T) {
-	store := NewStore()
+	store, _ := NewStore()
 	testData := ranger.Int(1, 100)
 	for _, n := range testData {
 		store.Set(n, n)
@@ -23,7 +24,7 @@ func TestSetAndGet(t *testing.T) {
 }
 
 func TestUnset(t *testing.T) {
-	store := NewStore()
+	store, _ := NewStore()
 	store.Set("name", "Toby")
 	store.Unset("name")
 	_, found := store.Get("name")
@@ -34,7 +35,7 @@ func TestUnset(t *testing.T) {
 // Test that ensures that concurrent updates are handled one-by-one, without using
 // a mutex lock, thanks to the singular update queue.
 func TestConcurrentUpdates(t *testing.T) {
-	store := NewStore()
+	store, _ := NewStore()
 	testData := ranger.Int(1, 1000)
 
 	var wg sync.WaitGroup
@@ -50,4 +51,27 @@ func TestConcurrentUpdates(t *testing.T) {
 
 	_, ok := store.Get("value")
 	assert.True(t, ok)
+}
+
+func TestWriteAheadLog(t *testing.T) {
+	logPath := "./test.log"
+	defer os.Remove(logPath)
+
+	first, err := NewStore(LogPath(logPath))
+	assert.NoError(t, err)
+	first.Set("a", "a")
+	first.Set("b", "b")
+	first.Set("c", "c")
+	first.Unset("b")
+
+	// Replay the log into a second store:
+	second, err := NewStore(LogPath((logPath)))
+	assert.NoError(t, err)
+	assert.Equal(t, first.data, second.data)
+	v, ok := second.Get("a")
+	assert.Equal(t, "a", v)
+	v, ok = second.Get("c")
+	assert.Equal(t, "c", v)
+	_, ok = second.Get("b")
+	assert.False(t, ok)
 }

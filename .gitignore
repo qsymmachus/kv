@@ -13,3 +13,5 @@
 
 .DS_Store
 
+# Test log files
+*.log
