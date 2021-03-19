@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGet(t *testing.T) {
+func TestSetAndGet(t *testing.T) {
 	store := NewStore()
 	testData := ranger.Int(1, 100)
 	for _, n := range testData {
@@ -20,6 +20,15 @@ func TestGet(t *testing.T) {
 		assert.True(t, found)
 		assert.Equal(t, v, k)
 	}
+}
+
+func TestUSet(t *testing.T) {
+	store := NewStore()
+	store.Set("name", "Toby")
+	store.Unset("name")
+	_, found := store.Get("name")
+
+	assert.False(t, found)
 }
 
 // Test that ensures that concurrent updates are handled one-by-one, without using

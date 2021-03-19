@@ -18,7 +18,8 @@ type kvStore struct {
 type updateType uint8
 
 const (
-	set updateType = 0
+	set   updateType = 0
+	unset updateType = 1
 )
 
 // Request to update the state of the store.
@@ -68,6 +69,18 @@ func (s *kvStore) Set(key interface{}, value interface{}) (err error) {
 	return nil
 }
 
+func (s *kvStore) Unset(key interface{}) (err error) {
+	update := update{1, key, nil, make(chan (updateResult))}
+	s.updates <- update
+	result := <-update.result
+
+	if !result.ok && result.err != nil {
+		return result.err
+	}
+
+	return nil
+}
+
 // Reads updates from the store's singular update queue. This ensures that only
 // one update is processed at a time, in the order they're received.
 func (s *kvStore) readUpdates() {
@@ -75,6 +88,9 @@ func (s *kvStore) readUpdates() {
 		switch update.updateType {
 		case set:
 			s.data[update.key] = update.value
+			update.result <- updateResult{true, nil}
+		case unset:
+			delete(s.data, update.key)
 			update.result <- updateResult{true, nil}
 		default:
 			err := fmt.Errorf("Unknown update type %d", update.updateType)
