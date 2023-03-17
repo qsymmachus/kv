@@ -20,6 +20,9 @@ type KVStore interface {
 
 	// Unsets a key/value pair in the store. REturns an error if it failed.
 	Unset(key interface{}) error
+
+	// Gets all data in the store as a map.
+	GetAll() map[interface{}]interface{}
 }
 
 // Underlying implementation of the key/value store.
@@ -102,6 +105,10 @@ func (s *kvStore) Set(key interface{}, value interface{}) error {
 func (s *kvStore) Unset(key interface{}) error {
 	append := s.log != nil
 	return s.queueUpdate(update{1, key, nil, append, make(chan (updateResult))})
+}
+
+func (s *kvStore) GetAll() map[interface{}]interface{} {
+	return s.data
 }
 
 // Sends an update to the `updates` channel and waits for the result.

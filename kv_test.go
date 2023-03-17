@@ -68,7 +68,7 @@ func TestWriteAheadLog(t *testing.T) {
 	// Replay the log into a second store:
 	second, err := NewStore(LogPath((logPath)))
 	assert.NoError(t, err)
-	assert.Equal(t, first.data, second.data)
+	assert.Equal(t, first.GetAll(), second.GetAll())
 	v, ok := second.Get("a")
 	assert.Equal(t, "a", v)
 	v, ok = second.Get("c")
