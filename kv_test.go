@@ -90,6 +90,8 @@ func BenchmarkWithoutLog(b *testing.B) {
 }
 
 func BenchmarkWithLog(b *testing.B) {
+	defer os.Remove(logPath)
+
 	store, _ := NewStore[int, int](LogPath(logPath))
 
 	for i := 0; i < b.N; i++ {
