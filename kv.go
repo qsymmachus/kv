@@ -8,6 +8,20 @@ import (
 	"os"
 )
 
+// A key/value store that stores its data in-memory, and optionally in a file.
+// When storing to a file, its data will be durable between restarts.
+type KVStore interface {
+	// Gets a value from the store using the provided key. If there is no matching
+	// key in the store, `found` will be false.
+	Get(key interface{}) (value interface{}, found bool)
+
+	// Sets a key/value pair in the store. Returns an error if it failed.
+	Set(key interface{}, value interface{}) error
+
+	// Unsets a key/value pair in the store. REturns an error if it failed.
+	Unset(key interface{}) error
+}
+
 // Underlying implementation of the key/value store.
 //
 // `data` is our backing key/value map.
@@ -49,7 +63,7 @@ type updateResult struct {
 
 // Instantiates an empty store and starts a goroutine to read
 // messages sent to the `updates` queue.
-func NewStore(options ...option) (*kvStore, error) {
+func NewStore(options ...option) (KVStore, error) {
 	store := kvStore{
 		data:    make(map[interface{}]interface{}),
 		updates: make(chan (update)),
@@ -75,20 +89,16 @@ func NewStore(options ...option) (*kvStore, error) {
 	return &store, nil
 }
 
-// Gets a value from the store using the provided key. If there is no matching
-// key in the store, `found` will be false.
 func (s *kvStore) Get(key interface{}) (value interface{}, found bool) {
 	value, found = s.data[key]
 	return value, found
 }
 
-// Sets a key/value pair in the store. Returns an error if it failed.
 func (s *kvStore) Set(key interface{}, value interface{}) error {
 	append := s.log != nil
 	return s.queueUpdate(update{0, key, value, append, make(chan (updateResult))})
 }
 
-// Unsets a key/value pair in the store. REturns an error if it failed.
 func (s *kvStore) Unset(key interface{}) error {
 	append := s.log != nil
 	return s.queueUpdate(update{1, key, nil, append, make(chan (updateResult))})
