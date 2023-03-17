@@ -1,11 +1,11 @@
 package kv
 
 // Options for the key/value store.
-// `logPath` points to a write-ahead log to make the store durable. If it is set,
-// the store will read any updates from the log when it starts to restore an
-// initial state. It will write all subsequent updates to the log to provide a
-// durability guarantee.
 type optionsData struct {
+	// `logPath` points to a write-ahead log to make the store durable. If it is set,
+	// the store will read any updates from the log when it starts to restore an
+	// initial state. It will write all subsequent updates to the log to provide a
+	// durability guarantee.
 	logPath string
 }
 

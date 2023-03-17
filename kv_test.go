@@ -12,7 +12,7 @@ import (
 const logPath = "./test.log"
 
 func TestSetAndGet(t *testing.T) {
-	store, _ := NewStore()
+	store, _ := NewStore[int, int]()
 	testData := ranger.Int(1, 100)
 	for _, n := range testData {
 		store.Set(n, n)
@@ -26,7 +26,7 @@ func TestSetAndGet(t *testing.T) {
 }
 
 func TestUnset(t *testing.T) {
-	store, _ := NewStore()
+	store, _ := NewStore[string, string]()
 	store.Set("name", "Toby")
 	store.Unset("name")
 	_, found := store.Get("name")
@@ -37,7 +37,7 @@ func TestUnset(t *testing.T) {
 // Test that ensures that concurrent updates are handled one-by-one, without using
 // a mutex lock, thanks to the singular update queue.
 func TestConcurrentUpdates(t *testing.T) {
-	store, _ := NewStore()
+	store, _ := NewStore[string, int]()
 	testData := ranger.Int(1, 1000)
 
 	var wg sync.WaitGroup
@@ -58,7 +58,7 @@ func TestConcurrentUpdates(t *testing.T) {
 func TestWriteAheadLog(t *testing.T) {
 	defer os.Remove(logPath)
 
-	first, err := NewStore(LogPath(logPath))
+	first, err := NewStore[string, string](LogPath(logPath))
 	assert.NoError(t, err)
 	first.Set("a", "a")
 	first.Set("b", "b")
@@ -66,7 +66,7 @@ func TestWriteAheadLog(t *testing.T) {
 	first.Unset("b")
 
 	// Replay the log into a second store:
-	second, err := NewStore(LogPath((logPath)))
+	second, err := NewStore[string, string](LogPath((logPath)))
 	assert.NoError(t, err)
 	assert.Equal(t, first.GetAll(), second.GetAll())
 	v, ok := second.Get("a")
@@ -78,7 +78,7 @@ func TestWriteAheadLog(t *testing.T) {
 }
 
 func BenchmarkWithoutLog(b *testing.B) {
-	store, _ := NewStore()
+	store, _ := NewStore[int, int]()
 
 	for i := 0; i < b.N; i++ {
 		testData := ranger.Int(1, 10000)
@@ -90,7 +90,7 @@ func BenchmarkWithoutLog(b *testing.B) {
 }
 
 func BenchmarkWithLog(b *testing.B) {
-	store, _ := NewStore(LogPath(logPath))
+	store, _ := NewStore[int, int](LogPath(logPath))
 
 	for i := 0; i < b.N; i++ {
 		testData := ranger.Int(1, 10000)
