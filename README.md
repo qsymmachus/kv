@@ -25,8 +25,8 @@ To set and get values:
 ```go
 err := store.Set("name", "ralph")
 
-v, found := store.get("name") // => "ralph", true
-v, found = store.get("favorite food") // => "", false
+v, found := store.Get("name") // => "ralph", true
+v, found = store.Get("favorite food") // => "", false
 ```
 
 To delete a value:
